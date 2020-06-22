@@ -85,7 +85,16 @@
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <netdb.h>
-
+#define BUFFSIZE 1024
+#define USERLEN 32
+#define OPTLEN 16
+struct  message{
+  char option[OPTLEN];
+  char user[USERLEN];
+  char buff[BUFFSIZE];
+  char target[USERLEN];
+  int sockid;
+};
 void error(const char *msg)
 {
     perror(msg);
@@ -94,6 +103,7 @@ void error(const char *msg)
 
 int main(int argc, char *argv[])
 {
+    struct message m;
     int sockfd, portno, n;
     struct sockaddr_in serv_addr;
     struct hostent *server;
@@ -121,25 +131,31 @@ int main(int argc, char *argv[])
     if (connect(sockfd,(struct sockaddr *) &serv_addr,sizeof(serv_addr)) < 0)
         error("ERROR connecting");
     for(;;){
-    printf("Please enter the message: ");
-    bzero(buffer,256);
-    fgets(buffer,255,stdin);
-    n = write(sockfd,buffer,strlen(buffer));
-    if (n==0) {
-       error("server disconnected");
-       break;
-     }
-    if (n < 0)
+      sleep(3);
+      /* printf("Please enter the message: "); */
+      bzero(buffer,256);
+      /* fgets(buffer,255,stdin); */
+      strcpy(m.option,"123");
+      strcpy(m.buff,"12346");
+      strcpy(m.user,"1234");
+      strcpy(m.target,"12345");
+      m.sockid = sockfd;
+      n = write(sockfd,&m,sizeof(struct message));
+      if (n==0) {
+         error("server disconnected");
+         break;
+       }
+      if (n < 0)
          error("ERROR writing to socket");
-    bzero(buffer,256);
-    n = read(sockfd,buffer,255);
-    if (n < 0)
+      bzero(buffer,256);
+      n = read(sockfd,buffer,255);
+      if (n < 0)
          error("ERROR reading from socket");
-    printf("%s\n",buffer);
-    if (n==0) {
-       error("server disconnected");
-       break;
-     }
+      printf("%s\n",buffer);
+      if (n==0) {
+         error("server disconnected");
+         break;
+       }
     }
     close(sockfd);
     return 0;

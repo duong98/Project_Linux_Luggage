@@ -82,7 +82,16 @@
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
-
+#define BUFFSIZE 1024
+#define USERLEN 32
+#define OPTLEN 16
+struct  message{
+  char option[OPTLEN];
+  char user[USERLEN];
+  char buff[BUFFSIZE];
+  char target[USERLEN];
+  int sockid;
+};
 void error(const char *msg)
 {
     perror(msg);
@@ -91,9 +100,10 @@ void error(const char *msg)
 
 int main(int argc, char *argv[])
 {
+     struct message m;
      int sockfd, newsockfd, portno;
      socklen_t clilen;
-     char buffer[256];
+     char buffer[256],buffer2[256]="test";
      struct sockaddr_in serv_addr, cli_addr;
      int n;
      if (argc < 2) {
@@ -113,26 +123,25 @@ int main(int argc, char *argv[])
               error("ERROR on binding");
      listen(sockfd,5);
      clilen = sizeof(cli_addr);
-     newsockfd = accept(sockfd,
-                 (struct sockaddr *) &cli_addr,
-                 &clilen);
-     if (newsockfd < 0)
-          error("ERROR on accept");
+     newsockfd = accept(sockfd,(struct sockaddr *) &cli_addr,&clilen);
+     if (newsockfd < 0)  error("ERROR on accept");
      bzero(buffer,256);
+
      for(;;){
-     n = read(newsockfd,buffer,255);
-     if (n < 0) error("ERROR reading from socket");
-     if (n==0) {
-       error("client disconnected");
-       break;
-     }
-     printf("Here is the message: %s\n",buffer);
-     n = write(newsockfd,"I got your message",18);
-     if (n < 0) error("ERROR writing to socket");
-     if (n==0) {
-       error("client disconnected");
-       break;
-     }
+       sleep(3);
+       n = read(newsockfd,&m,sizeof(struct message));
+       if (n < 0) error("ERROR reading from socket");
+       if (n==0) {
+         error("client disconnected");
+         break;
+       }
+       printf("Here is the message: %s %s %s %s %d\n",m.option,m.user,m.target,m.buff,m.sockid);
+       n = write(newsockfd,buffer2,255);
+       if (n < 0) error("ERROR writing to socket");
+       if (n==0) {
+         error("client disconnected");
+         break;
+       }
      }
      close(newsockfd);
      close(sockfd);
